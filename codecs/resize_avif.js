@@ -10,6 +10,21 @@ function getImageDataUrl(imageData) {
     return canvas.toDataURL("image/jpeg");
 }
 
+function resizeNameToIndex(name) {
+    switch (name) {
+        case 'triangle':
+            return 0;
+        case 'catrom':
+            return 1;
+        case 'mitchell':
+            return 2;
+        case 'lanczos3':
+            return 3;
+        default:
+            throw Error(`Unknown resize algorithm "${name}"`);
+    }
+}
+
 const defaultEncoderOptions = {
     cqLevel: 33,
     cqAlphaLevel: -1,
@@ -36,11 +51,33 @@ const img = document.createElement('img');
 img.src = getImageDataUrl(imageData);
 document.body.appendChild(img);
 
+//resize
+const resizeDefaultOptions = {
+    method: 'lanczos3',
+    fitMethod: 'stretch',
+    premultiply: true,
+    linearRGB: true,
+};
+const { default: resize_init, resize } = await import('./resize/pkg/squoosh_resize.js');
+await resize_init();
+const resizedImageWidth = 100;
+const resizedImageHeight = 100;
+const resizedImageData = resize(
+    imageData.data,
+    imageData.width,
+    imageData.height,
+    resizedImageWidth,
+    resizedImageHeight,
+    resizeNameToIndex(resizeDefaultOptions.method),
+    resizeDefaultOptions.premultiply,
+    resizeDefaultOptions.linearRGB,
+);
+
 
 const { default: avif_enc } = await import('./avif/enc/avif_enc.js');
 //import avif_enc from './avif/enc/avif_enc.js';
 const avifEnc = await avif_enc({ noInitialRun: true });
-const result = avifEnc.encode(imageData.data, imageData.width, imageData.height, defaultEncoderOptions);
+const result = avifEnc.encode(resizedImageData, resizedImageWidth, resizedImageHeight, defaultEncoderOptions);
 console.log('size after compression: ', result.length);
 
 // save avif image

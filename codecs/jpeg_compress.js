@@ -1,3 +1,8 @@
+async function loadFile(src) {
+    const resp = await fetch(src);
+    return await resp.arrayBuffer();
+}
+
 async function loadImage(src) {
     // Load image
     const img = document.createElement('img');
@@ -10,6 +15,13 @@ async function loadImage(src) {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
     return ctx.getImageData(0, 0, img.width, img.height);
+}
+
+function getImageDataUrl(imageData) {
+    const canvas = document.createElement('canvas');
+    [canvas.width, canvas.height] = [imageData.width, imageData.height];
+    canvas.getContext('2d').putImageData(imageData, 0, 0);
+    return canvas.toDataURL("image/jpeg");
 }
 
 const defaultEncoderOptions = {
@@ -31,8 +43,16 @@ const defaultEncoderOptions = {
     chroma_quality: 75,
 };
 
+const image = await loadFile('./example.jpg');
+console.log('size before compression: ', image.byteLength);
+
+//encode image
 const jpegImage = await loadImage('./example.jpg');
-console.log('size after compression: ', jpegImage.data.byteLength);
+
+//show decoded images
+const img = document.createElement('img');
+img.src = getImageDataUrl(jpegImage);
+document.body.appendChild(img);
 
 const {default: mozjpeg_enc} = await import('./mozjpeg/enc/mozjpeg_enc.js');
 //import mozjpeg_enc from './mozjpeg/enc/mozjpeg_enc.js';
@@ -40,8 +60,4 @@ const mozjpegEnc = await mozjpeg_enc({ noInitialRun: true });
 const result = mozjpegEnc.encode(jpegImage.data, jpegImage.width, jpegImage.height, defaultEncoderOptions);
 console.log('size after compression: ', result.length);
 
-const blob = new Blob([result], { type: 'image/jpeg' });
-const blobURL = URL.createObjectURL(blob);
-const img = document.createElement('img');
-img.src = blobURL;
-document.body.appendChild(img);
+saveAs(new Blob([result]), "test.jpg");
