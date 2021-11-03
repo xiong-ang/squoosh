@@ -1,0 +1,5 @@
+/* eslint-disable */
+/*global self */
+/*global globalThis */
+
+to disable warning and errors
